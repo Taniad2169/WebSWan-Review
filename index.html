@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebSwan Client Review</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      background: #2DA5B5; 
+      margin: 0; 
+      padding: 0; 
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .container { 
+      max-width: 600px; 
+      margin: 50px auto; 
+      background: #baf5f3; 
+      padding: 30px; 
+      border-radius: 12px; 
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2), 
+                  0 4px 12px rgba(0,0,0,0.15),
+                  inset 0 1px 0 rgba(255,255,255,0.3);
+      border: 1px solid rgba(255,255,255,0.2);
+      position: relative;
+    }
+    .container:before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      background: linear-gradient(45deg, rgba(45, 165, 181, 0.3), rgba(186, 245, 243, 0.3));
+      border-radius: 14px;
+      z-index: -1;
+      opacity: 0.8;
+    }
+    h1 { 
+      text-align: center; 
+      color: #1e40af; 
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+    }
+    label { 
+      display: block; 
+      margin-top: 15px; 
+      font-weight: bold; 
+      color: #333;
+    }
+    select, textarea, input[type="text"], button { 
+      width: 100%; 
+      padding: 12px 15px; 
+      margin-top: 8px; 
+      border-radius: 8px; 
+      border: 2px solid #ccc;
+      border-bottom: 4px solid #999;
+      font-size: 1rem; 
+      background: white;
+      transition: all 0.3s ease;
+      box-sizing: border-box;
+    }
+    select:focus, textarea:focus, input[type="text"]:focus {
+      outline: none;
+      border-color: #1e40af;
+      border-bottom-color: #1e3a8a;
+      box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1),
+                  inset 0 2px 4px rgba(0,0,0,0.05);
+      transform: translateY(-1px);
+    }
+    select:hover, textarea:hover, input[type="text"]:hover {
+      border-color: #94a3b8;
+      border-bottom-color: #64748b;
+    }
+    .stars { 
+      display: flex; 
+      margin-top: 10px; 
+      margin-bottom: 15px;
+    }
+    .star { 
+      font-size: 2.2rem; 
+      cursor: pointer; 
+      color: #e5e7eb; 
+      margin-right: 8px;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+      transition: all 0.2s ease;
+    }
+    .star:hover {
+      transform: scale(1.1);
+    }
+    .star.selected, .star:hover, .star:hover ~ .star { 
+      color: #fbbf24; 
+      text-shadow: 0 0 8px rgba(251, 191, 36, 0.4);
+    }
+    .hidden { 
+      display: none; 
+    }
+    button { 
+      background: linear-gradient(to bottom, #1e40af, #1e3a8a); 
+      color: white; 
+      border: none; 
+      cursor: pointer; 
+      transition: all 0.3s; 
+      font-weight: bold;
+      letter-spacing: 0.5px;
+      border-bottom: 4px solid #1e3a8a;
+      margin-top: 25px;
+      text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+    }
+    button:hover { 
+      background: linear-gradient(to bottom, #2563eb, #1e40af);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(30, 64, 175, 0.3);
+      border-bottom-color: #1e40af;
+    }
+    button:active {
+      transform: translateY(1px);
+      border-bottom-width: 2px;
+    }
+    .field-group {
+      position: relative;
+      margin-bottom: 5px;
+    }
+    .field-group:after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, rgba(30, 64, 175, 0.1), transparent);
+      border-radius: 0 0 8px 8px;
+    }
+    
+    /* Celebration Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      backdrop-filter: blur(3px);
+    }
+    
+    .modal {
+      background: white;
+      padding: 40px;
+      border-radius: 15px;
+      text-align: center;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+      position: relative;
+      z-index: 1001;
+    }
+    
+    .emoji {
+      font-size: 4rem;
+      margin-bottom: 20px;
+      display: block;
+      animation: bounce 1s infinite alternate;
+    }
+    
+    @keyframes bounce {
+      from { transform: translateY(0px); }
+      to { transform: translateY(-20px); }
+    }
+    
+    .modal h2 {
+      color: #1e40af;
+      margin-bottom: 15px;
+    }
+    
+    .modal p {
+      color: #333;
+      font-size: 1.1rem;
+      line-height: 1.5;
+      margin-bottom: 25px;
+    }
+    
+    .modal-close {
+      background: #1e40af;
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.3s;
+    }
+    
+    .modal-close:hover {
+      background: #2563eb;
+    }
+    
+    /* Confetti */
+    .confetti {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      background: #f00;
+      top: -10px;
+      z-index: 999;
+      animation: fall 3s linear infinite;
+    }
+    
+    @keyframes fall {
+      to {
+        transform: translateY(100vh) rotate(360deg);
+      }
+    }
+    
+    /* Feedback Modal for Low Ratings */
+    .feedback-modal {
+      max-width: 500px;
+    }
+    
+    .feedback-textarea {
+      width: 100%;
+      min-height: 150px;
+      margin: 20px 0;
+      padding: 15px;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      font-family: Arial, sans-serif;
+      font-size: 1rem;
+      resize: vertical;
+    }
+    
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: #1e40af;
+    }
+    
+    .sad-emoji {
+      color: #f59e0b;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>WebSwan Client Review</h1>
+  <form id="reviewForm">
+
+    <div class="field-group">
+      <label for="service">What service did we provide for your company?</label>
+      <select id="service" required>
+        <option value="">Select a service</option>
+        <option value="custom web design">Custom Web Design</option>
+        <option value="custom landing page">Custom Landing Page</option>
+        <option value="effective SEO">Effective SEO</option>
+        <option value="custom PWA front-end phone application">Custom PWA Front-End Phone Application</option>
+        <option value="custom logo">Custom Logo</option>
+        <option value="custom QR code">Custom QR Code</option>
+        <option value="Ad campaign marketing video">Ad Campaign Marketing Video</option>
+        <option value="Ad campaign marketing script">Ad Campaign Marketing Script</option>
+        <option value="Online advertising">Online Advertising</option>
+      </select>
+    </div>
+
+    <div id="companyWebSwan" class="hidden">
+      <div class="field-group">
+        <label for="companyWebSwanSelect">Company:</label>
+        <select id="companyWebSwanSelect">
+          <option value="WebSwan">WebSwan</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="companyMedia" class="hidden">
+      <div class="field-group">
+        <label for="companyMediaSelect">Company:</label>
+        <select id="companyMediaSelect">
+          <option value="WebSwan Media Network">WebSwan Media Network</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label for="businessType">What is your business type?</label>
+      <select id="businessType" required>
+        <option value="">Select your business type</option>
+        <option value="doctor">Doctor</option>
+        <option value="lawyer">Lawyer</option>
+        <option value="chiropractor">Chiropractor</option>
+        <option value="plastic surgeon">Plastic Surgeon</option>
+        <option value="orthopedic surgeon">Orthopedic Surgeon</option>
+        <option value="cosmetic surgeon">Cosmetic Surgeon</option>
+        <option value="dentist">Dentist</option>
+        <option value="realtor">Realtor</option>
+        <option value="mortgage broker">Mortgage Broker</option>
+        <option value="accountant/tax preparer">Accountant/Tax Preparer</option>
+        <option value="restaurant owner">Restaurant Owner</option>
+        <option value="HVAC">HVAC</option>
+        <option value="electrician">Electrician</option>
+        <option value="entrepreneur">Entrepreneur</option>
+        <option value="beautician">Beautician</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+
+    <div class="field-group">
+      <label>How would you rate us?</label>
+      <div class="stars">
+        <span class="star" data-value="1">&#9733;</span>
+        <span class="star" data-value="2">&#9733;</span>
+        <span class="star" data-value="3">&#9733;</span>
+        <span class="star" data-value="4">&#9733;</span>
+        <span class="star" data-value="5">&#9733;</span>
+      </div>
+      <input type="hidden" id="starRating" required>
+    </div>
+
+    <div class="field-group">
+      <label for="review">What did you like about working with us?</label>
+      <textarea id="review" rows="5" maxlength="500" placeholder="Max 500 words" required></textarea>
+    </div>
+
+    <div class="field-group">
+      <label>Do you mind if we feature your review on our platform?</label>
+      <select id="permission" required>
+        <option value="">Select</option>
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+      </select>
+    </div>
+
+    <div class="field-group">
+      <label for="name">Please type your full name to confirm permission:</label>
+      <input type="text" id="name" required>
+    </div>
+
+    <div class="field-group">
+      <label>Would you refer a client to us?</label>
+      <select id="referral" required>
+        <option value="">Select</option>
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+      </select>
+    </div>
+
+    <div id="referralApp" class="hidden">
+      <div class="field-group">
+        <label>Can we send you a referral link via our app? (Earn 10% commission)</label>
+        <select id="referralPermission">
+          <option value="">Select</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+      </div>
+    </div>
+
+    <button type="submit">Submit Review</button>
+
+  </form>
+</div>
+
+<script>
+  // Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyCvidSCjeBsZkN7US5pIUvtlLVNLM4cTv0",
+    authDomain: "webswan-media-network-survey.firebaseapp.com",
+    projectId: "webswan-media-network-survey",
+    storageBucket: "webswan-media-network-survey.appspot.com",
+    messagingSenderId: "914643175462",
+    appId: "1:914643175462:web:d479c4bd87effba15cbee7",
+    measurementId: "G-D8P1JMF6Z4"
+  };
+
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  // Service selection logic
+  const serviceSelect = document.getElementById('service');
+  const companyWebSwan = document.getElementById('companyWebSwan');
+  const companyMedia = document.getElementById('companyMedia');
+  const companyWebSwanSelect = document.getElementById('companyWebSwanSelect');
+  const companyMediaSelect = document.getElementById('companyMediaSelect');
+
+  serviceSelect.addEventListener('change', () => {
+    // Hide both company selections first
+    companyWebSwan.classList.add('hidden');
+    companyMedia.classList.add('hidden');
+    
+    const selectedService = serviceSelect.value;
+    
+    // Show WebSwan Media Network for advertising services
+    if (selectedService === "Ad campaign marketing video" || 
+        selectedService === "Ad campaign marketing script" || 
+        selectedService === "Online advertising") {
+      companyMedia.classList.remove('hidden');
+    } 
+    // Show WebSwan for all other services
+    else if (selectedService !== "") {
+      companyWebSwan.classList.remove('hidden');
+    }
+  });
+
+  // Star rating logic
+  const stars = document.querySelectorAll('.star');
+  const starInput = document.getElementById('starRating');
+
+  stars.forEach(star => {
+    star.addEventListener('mouseover', () => {
+      resetStars();
+      star.classList.add('selected');
+      let prev = star.previousElementSibling;
+      while(prev){ prev.classList.add('selected'); prev = prev.previousElementSibling; }
+    });
+    star.addEventListener('click', () => {
+      starInput.value = star.dataset.value;
+    });
+    star.addEventListener('mouseout', () => {
+      updateStarsFromInput();
+    });
+  });
+
+  function resetStars(){
+    stars.forEach(s => s.classList.remove('selected'));
+  }
+
+  function updateStarsFromInput(){
+    resetStars();
+    if(starInput.value){
+      stars.forEach(s => {
+        if(s.dataset.value <= starInput.value) s.classList.add('selected');
+      });
+    }
+  }
+
+  // Referral logic
+  const referralSelect = document.getElementById('referral');
+  const referralApp = document.getElementById('referralApp');
+  referralSelect.addEventListener('change', () => {
+    referralApp.classList.add('hidden');
+    if(referralSelect.value === "Yes") referralApp.classList.remove('hidden');
+  });
+
+  // Create confetti function
+  function createConfetti() {
+    const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ff9900'];
+    for (let i = 0; i < 150; i++) {
+      const confetti = document.createElement('div');
+      confetti.className = 'confetti';
+      confetti.style.left = Math.random() * 100 + 'vw';
+      confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+      confetti.style.width = Math.random() * 10 + 5 + 'px';
+      confetti.style.height = Math.random() * 10 + 5 + 'px';
+      confetti.style.animationDuration = Math.random() * 2 + 2 + 's';
+      confetti.style.opacity = Math.random() * 0.5 + 0.5;
+      
+      document.body.appendChild(confetti);
+      
+      setTimeout(() => {
+        confetti.remove();
+      }, 3000);
+    }
+  }
+
+  // Show celebration modal
+  function showCelebrationModal() {
+    createConfetti();
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+      <div class="modal">
+        <span class="emoji">🌐🛜😀</span>
+        <h2>Thank You!</h2>
+        <p>Thank you for your review! We appreciate your time in completing the review. Looking forward to work with you again!</p>
+        <button class="modal-close">Close</button>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    modal.querySelector('.modal-close').addEventListener('click', () => {
+      modal.remove();
+      resetForm();
+    });
+    
+    // Close modal if clicked outside
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.remove();
+        resetForm();
+      }
+    });
+  }
+
+  // Show feedback modal for low ratings
+  function showFeedbackModal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+      <div class="modal feedback-modal">
+        <span class="emoji sad-emoji">😔</span>
+        <h2>How could we make this better?</h2>
+        <p>We're sorry to hear you weren't completely satisfied. Please help us improve by sharing your feedback.</p>
+        <textarea class="feedback-textarea" placeholder="Please tell us how we can improve (max 500 words)" maxlength="500"></textarea>
+        <button class="modal-close" id="submitFeedback">Submit Feedback</button>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    modal.querySelector('#submitFeedback').addEventListener('click', async () => {
+      const feedback = modal.querySelector('.feedback-textarea').value;
+      if (feedback.trim()) {
+        try {
+          // Save feedback to Firebase
+          await db.collection('low_rating_feedback').add({
+            service: serviceSelect.value,
+            rating: starInput.value,
+            feedback: feedback,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          
+          alert("Thank you for your feedback. We'll use it to improve our services.");
+          modal.remove();
+          resetForm();
+        } catch (error) {
+          console.error("Error submitting feedback: ", error);
+          alert("Oops! Something went wrong. Please try again.");
+        }
+      } else {
+        alert("Please provide some feedback before submitting.");
+      }
+    });
+    
+    // Close modal if clicked outside
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.remove();
+        resetForm();
+      }
+    });
+  }
+
+  // Reset form function
+  function resetForm() {
+    form.reset();
+    companyWebSwan.classList.add('hidden');
+    companyMedia.classList.add('hidden');
+    referralApp.classList.add('hidden');
+    resetStars();
+  }
+
+  // Form submission
+  const form = document.getElementById('reviewForm');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    // Determine which company was selected
+    let company = "";
+    if (companyWebSwan.classList.contains('hidden') === false) {
+      company = companyWebSwanSelect.value;
+    } else if (companyMedia.classList.contains('hidden') === false) {
+      company = companyMediaSelect.value;
+    }
+
+    const reviewData = {
+      service: serviceSelect.value,
+      company: company,
+      businessType: document.getElementById('businessType').value,
+      rating: starInput.value,
+      review: document.getElementById('review').value,
+      permission: document.getElementById('permission').value,
+      name: document.getElementById('name').value,
+      referral: referralSelect.value,
+      referralPermission: document.getElementById('referralPermission').value || "No",
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    try {
+      // Submit review to Firebase
+      await db.collection('reviews').add(reviewData);
+      
+      // Check rating and show appropriate modal
+      const rating = parseInt(starInput.value);
+      
+      if (rating >= 4) {
+        // 4-5 stars: Show celebration
+        showCelebrationModal();
+      } else {
+        // 1-3 stars: Show feedback modal
+        showFeedbackModal();
+      }
+      
+    } catch (error) {
+      console.error("Error submitting review: ", error);
+      alert("Oops! Something went wrong. Please try again.");
+    }
+  });
+</script>
+
+</body>
+</html>
