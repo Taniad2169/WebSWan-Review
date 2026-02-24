@@ -4,8 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WebSwan Client Review</title>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <!-- NO FIREBASE - Using Formspree only -->
   <style>
     body { 
       font-family: Arial, sans-serif; 
@@ -14,6 +13,7 @@
       padding: 0; 
       min-height: 100vh;
       overflow-x: hidden;
+      scroll-behavior: smooth;
     }
     .container { 
       max-width: 600px; 
@@ -340,6 +340,18 @@
       50% { transform: scale(1.05); }
       100% { transform: scale(1); }
     }
+
+    /* Error highlight for form fields */
+    .error-field {
+      border-color: #ff6b6b !important;
+      border-bottom-color: #ff4444 !important;
+      box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.2) !important;
+    }
+
+    /* Smooth scroll helper class */
+    .scroll-target {
+      scroll-margin-top: 30px;
+    }
   </style>
 </head>
 <body>
@@ -347,7 +359,7 @@
 <div class="container">
   <h1>WebSwan Client Review</h1>
   
-  <!-- Simple IP-Based Verification Button -->
+  <!-- Simple IP-Based Verification Button (with scroll ID) -->
   <div class="verification-badge" id="verifyButton">
     <span>🔒</span>
     <span id="verifyText">Click to Verify You're a Real Client</span>
@@ -361,7 +373,7 @@
     <span class="ip-status" id="ipStatus">✓ Verified</span>
   </div>
 
-  <!-- Form with Formspree endpoint -->
+  <!-- Form with Formspree endpoint (NO FIREBASE) -->
   <form id="reviewForm" action="https://formspree.io/f/mojnpbje" method="POST">
     
     <!-- Honeypot field to prevent spam -->
@@ -374,7 +386,7 @@
     <input type="hidden" id="clientIP" name="clientIP" value="">
     <input type="hidden" id="verified" name="verified" value="false">
 
-    <div class="field-group">
+    <div class="field-group" id="serviceField">
       <label for="service">What service did we provide for your company?</label>
       <select id="service" name="service" required>
         <option value="">Select a service</option>
@@ -408,7 +420,7 @@
       </div>
     </div>
 
-    <div class="field-group">
+    <div class="field-group" id="businessTypeField">
       <label for="businessType">What is your business type?</label>
       <select id="businessType" name="businessType" required>
         <option value="">Select your business type</option>
@@ -432,22 +444,22 @@
     </div>
 
     <!-- Client Contact Information -->
-    <div class="field-group">
+    <div class="field-group" id="emailField">
       <label for="email">Your Email Address:</label>
       <input type="email" id="email" name="email" placeholder="your@email.com" required>
     </div>
 
-    <div class="field-group">
+    <div class="field-group" id="phoneField">
       <label for="phone">Phone Number:</label>
       <input type="tel" id="phone" name="phone" placeholder="(555) 555-5555" required>
     </div>
 
-    <div class="field-group">
+    <div class="field-group" id="projectDateField">
       <label for="projectDate">When did we complete your project? (Approximate)</label>
       <input type="date" id="projectDate" name="projectDate" required>
     </div>
 
-    <div class="field-group">
+    <div class="field-group" id="ratingField">
       <label>How would you rate us?</label>
       <div class="stars">
         <span class="star" data-value="1">&#9733;</span>
@@ -459,12 +471,12 @@
       <input type="hidden" id="starRating" name="rating" required>
     </div>
 
-    <div class="field-group">
+    <div class="field-group" id="reviewField">
       <label for="review">What did you like about working with us?</label>
       <textarea id="review" name="review" rows="5" maxlength="500" placeholder="Max 500 words" required></textarea>
     </div>
 
-    <div class="field-group">
+    <div class="field-group" id="permissionField">
       <label>Do you mind if we feature your review on our platform?</label>
       <select id="permission" name="permission" required>
         <option value="">Select</option>
@@ -473,12 +485,12 @@
       </select>
     </div>
 
-    <div class="field-group">
+    <div class="field-group" id="nameField">
       <label for="name">Please type your full name to confirm permission:</label>
       <input type="text" id="name" name="name" required>
     </div>
 
-    <div class="field-group">
+    <div class="field-group" id="referralField">
       <label>Would you refer a client to us?</label>
       <select id="referral" name="referral" required>
         <option value="">Select</option>
@@ -507,22 +519,7 @@
 </div>
 
 <script>
-  // Firebase configuration
-  const firebaseConfig = {
-    apiKey: "AIzaSyCvidSCjeBsZkN7US5pIUvtlLVNLM4cTv0",
-    authDomain: "webswan-media-network-survey.firebaseapp.com",
-    projectId: "webswan-media-network-survey",
-    storageBucket: "webswan-media-network-survey.appspot.com",
-    messagingSenderId: "914643175462",
-    appId: "1:914643175462:web:d479c4bd87effba15cbee7",
-    measurementId: "G-D8P1JMF6Z4"
-  };
-
-  // Initialize Firebase
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-
-  // ========== SIMPLE IP VERIFICATION ==========
+  // ========== SIMPLE IP VERIFICATION (NO FIREBASE) ==========
   
   let isVerified = false;
   let clientIP = '';
@@ -723,27 +720,12 @@
     
     document.body.appendChild(modal);
     
-    modal.querySelector('#submitFeedback').addEventListener('click', async () => {
+    modal.querySelector('#submitFeedback').addEventListener('click', () => {
       const feedback = modal.querySelector('.feedback-textarea').value;
       if (feedback.trim()) {
-        try {
-          // Save feedback to Firebase
-          await db.collection('low_rating_feedback').add({
-            service: serviceSelect.value,
-            rating: starInput.value,
-            feedback: feedback,
-            clientIP: clientIP,
-            verified: isVerified,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-          });
-          
-          alert("Thank you for your feedback. We'll use it to improve our services.");
-          modal.remove();
-          resetForm();
-        } catch (error) {
-          console.error("Error submitting feedback: ", error);
-          alert("Oops! Something went wrong. Please try again.");
-        }
+        alert("Thank you for your feedback. We'll use it to improve our services.");
+        modal.remove();
+        resetForm();
       } else {
         alert("Please provide some feedback before submitting.");
       }
@@ -767,62 +749,82 @@
     resetStars();
   }
 
-  // Form submission - handles both Formspree and Firebase
+  // Smooth scroll to element function
+  function smoothScrollToElement(element) {
+    if (element) {
+      element.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center' 
+      });
+    }
+  }
+
+  // Form submission - Formspree only (NO FIREBASE)
   const form = document.getElementById('reviewForm');
   
-  // Intercept form submission to also save to Firebase
-  form.addEventListener('submit', async (e) => {
+  form.addEventListener('submit', (e) => {
     // Check if user has verified
     if (!isVerified) {
       e.preventDefault();
       alert('⚠️ Please click the green "Verify" button first!');
-      // Highlight the verify button
+      
+      // Highlight the verify button with pulse animation
       verifyButton.style.animation = 'pulse 0.5s 3';
+      
+      // Smooth scroll to verify button
+      smoothScrollToElement(verifyButton);
+      
       setTimeout(() => {
         verifyButton.style.animation = '';
       }, 1500);
+      
       return false;
     }
     
-    // Determine which company was selected
-    let company = "";
-    if (companyWebSwan.classList.contains('hidden') === false) {
-      company = companyWebSwanSelect.value;
-    } else if (companyMedia.classList.contains('hidden') === false) {
-      company = companyMediaSelect.value;
-    }
-
-    const reviewData = {
-      service: serviceSelect.value,
-      company: company,
-      businessType: document.getElementById('businessType').value,
-      rating: starInput.value,
-      review: document.getElementById('review').value,
-      permission: document.getElementById('permission').value,
-      name: document.getElementById('name').value,
-      email: document.getElementById('email').value,
-      phone: document.getElementById('phone').value,
-      projectDate: document.getElementById('projectDate').value,
-      referral: referralSelect.value,
-      referralPermission: document.getElementById('referralPermission').value || "No",
-      clientIP: clientIP,
-      verified: true,
-      verificationTime: new Date().toISOString(),
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    };
-
-    try {
-      // Save to Firebase (as backup)
-      await db.collection('reviews').add(reviewData);
-      console.log("Review saved to Firebase successfully!");
-      
-    } catch (error) {
-      console.error("Error saving to Firebase: ", error);
-      // Still let Formspree submission go through
+    // Check all required fields
+    const requiredFields = form.querySelectorAll('[required]');
+    let firstInvalidField = null;
+    
+    requiredFields.forEach(field => {
+      if (!field.value.trim()) {
+        field.classList.add('error-field');
+        if (!firstInvalidField) {
+          firstInvalidField = field;
+        }
+      } else {
+        field.classList.remove('error-field');
+      }
+    });
+    
+    // Special validation for rating
+    if (!starInput.value) {
+      const ratingField = document.getElementById('ratingField');
+      ratingField.classList.add('error-field');
+      if (!firstInvalidField) {
+        firstInvalidField = ratingField;
+      }
+    } else {
+      document.getElementById('ratingField').classList.remove('error-field');
     }
     
-    // Let the form continue to Formspree
-    // The page will redirect to the _next URL after submission
+    // If there are invalid fields, scroll to the first one
+    if (firstInvalidField) {
+      e.preventDefault();
+      alert('⚠️ Please fill in all required fields.');
+      smoothScrollToElement(firstInvalidField);
+      return false;
+    }
+    
+    // Determine which company was selected for the rating check
+    const rating = parseInt(starInput.value);
+    
+    // For low ratings, we'll handle with a local modal
+    if (rating <= 3) {
+      e.preventDefault(); // Prevent Formspree submission for low ratings
+      showFeedbackModal();
+    }
+    // For high ratings, let Formspree handle it normally
+    // Form will continue to Formspree
   });
 </script>
 
